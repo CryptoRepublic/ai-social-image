@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Generator - Powered by Pollinations.ai</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>✨ AI Image Generator</h1>
+            <p>Type a prompt and generate your image for free.</p>
+        </header>
+
+        <main>
+            <div class="input-group">
+                <label for="prompt">Your Prompt:</label>
+                <textarea id="prompt" rows="3" placeholder="A futuristic city with flying cars at sunset..."></textarea>
+            </div>
+
+            <div class="input-group">
+                <label for="format">Choose format:</label>
+                <select id="format">
+                    <option value="1080x1080">Square (1080x1080)</option>
+                    <option value="1920x1080">Landscape (1920x1080)</option>
+                    <option value="1080x1920">Portrait / Stories (1080x1920)</option>
+                </select>
+            </div>
+
+            <button id="generate-btn">Generate Image 🚀</button>
+
+            <div class="result-section">
+                <div id="loader" class="hidden">Generating... please wait! ⏳</div>
+                <img id="result-img" class="hidden" alt="Generated AI Image" crossorigin="anonymous" />
+                
+                <div id="action-buttons" class="action-buttons hidden">
+                    <button id="download-btn" class="btn-success">Download 📥</button>
+                    <button id="regenerate-btn" class="btn-warning">Regenerate 🔄</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
