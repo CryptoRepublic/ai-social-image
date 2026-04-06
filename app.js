@@ -1,6 +1,11 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // DOM Elements
     const promptInput = document.getElementById("prompt");
     const formatSelect = document.getElementById("format");
+    const modelSelect = document.getElementById("model");
+    const seedInput = document.getElementById("seed");
+    const enhanceCheckbox = document.getElementById("enhance");
+    
     const generateBtn = document.getElementById("generate-btn");
     const loader = document.getElementById("loader");
     const resultImg = document.getElementById("result-img");
@@ -8,96 +13,134 @@ document.addEventListener("DOMContentLoaded", () => {
     const downloadBtn = document.getElementById("download-btn");
     const regenerateBtn = document.getElementById("regenerate-btn");
 
-    let currentImageUrl = "";
+    // Modal & Auth Elements
+    const authBtn = document.getElementById("auth-btn");
+    const authModal = document.getElementById("auth-modal");
+    const apiKeyInput = document.getElementById("api-key-input");
+    const saveKeyBtn = document.getElementById("save-key-btn");
+    const clearKeyBtn = document.getElementById("clear-key-btn");
+    const closeModalBtn = document.getElementById("close-modal-btn");
 
-    // Function to generate the image
-    const generateImage = () => {
+    let currentBlobUrl = "";
+
+    // --- Authentication Logic ---
+    const checkAuthStatus = () => {
+        const token = localStorage.getItem("pollinationsToken");
+        if (token) {
+            authBtn.textContent = "✅ Logged In";
+            authBtn.classList.add("btn-success");
+            authBtn.classList.remove("btn-outline");
+            apiKeyInput.value = token;
+            clearKeyBtn.classList.remove("hidden");
+        } else {
+            authBtn.textContent = "🔑 Login / API Key";
+            authBtn.classList.remove("btn-success");
+            authBtn.classList.add("btn-outline");
+            apiKeyInput.value = "";
+            clearKeyBtn.classList.add("hidden");
+        }
+    };
+
+    authBtn.addEventListener("click", () => authModal.classList.remove("hidden"));
+    closeModalBtn.addEventListener("click", () => authModal.classList.add("hidden"));
+
+    saveKeyBtn.addEventListener("click", () => {
+        const token = apiKeyInput.value.trim();
+        if (token) {
+            localStorage.setItem("pollinationsToken", token);
+            checkAuthStatus();
+            authModal.classList.add("hidden");
+        }
+    });
+
+    clearKeyBtn.addEventListener("click", () => {
+        localStorage.removeItem("pollinationsToken");
+        checkAuthStatus();
+        authModal.classList.add("hidden");
+    });
+
+    checkAuthStatus(); // Initialize auth state
+
+    // --- Image Generation Logic ---
+    const generateImage = async () => {
         const prompt = promptInput.value.trim();
         if (!prompt) {
             alert("Please enter a prompt before generating an image.");
             return;
         }
 
-        // Extract width and height from the selected format
+        // 1. Get base parameters
         const formatParts = formatSelect.value.split("x");
         const width = formatParts[0];
         const height = formatParts[1];
-
-        // Encode the prompt safely for the URL
         const encodedPrompt = encodeURIComponent(prompt);
         
-        // Generate a random seed to ensure a new image is generated every time
-        const randomSeed = Math.floor(Math.random() * 1000000);
+        // 2. Get advanced parameters
+        const model = modelSelect.value;
+        const seed = seedInput.value.trim() !== "" ? seedInput.value : Math.floor(Math.random() * 1000000);
+        const enhance = enhanceCheckbox.checked ? "true" : "false";
 
-        // Build the Pollinations API URL
-        currentImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&nologo=true&seed=${randomSeed}`;
+        // 3. Build URL
+        const apiUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&model=${model}&seed=${seed}&enhance=${enhance}&nologo=true`;
 
-        // Update UI state
+        // Update UI
         generateBtn.disabled = true;
         regenerateBtn.disabled = true;
-        downloadBtn.disabled = true;
-        
         actionButtons.classList.add("hidden");
         resultImg.classList.add("hidden");
         loader.classList.remove("hidden");
 
-        // Set the URL as the image source
-        resultImg.src = currentImageUrl;
-    };
+        // Prepare Request Headers (if user is logged in)
+        const token = localStorage.getItem("pollinationsToken");
+        const fetchOptions = { method: 'GET' };
+        if (token) {
+            fetchOptions.headers = { 'Authorization': `Bearer ${token}` };
+        }
 
-    // When the image finishes loading
-    resultImg.onload = () => {
-        loader.classList.add("hidden");
-        resultImg.classList.remove("hidden");
-        actionButtons.classList.remove("hidden");
-        
-        generateBtn.disabled = false;
-        regenerateBtn.disabled = false;
-        downloadBtn.disabled = false;
-    };
-
-    // If an error occurs during loading
-    resultImg.onerror = () => {
-        loader.classList.add("hidden");
-        alert("An error occurred while generating the image. Please try again.");
-        generateBtn.disabled = false;
-        regenerateBtn.disabled = false;
-        downloadBtn.disabled = false;
-    };
-
-    // Function to force download the image
-    const downloadImage = async () => {
-        if (!currentImageUrl) return;
-        
         try {
-            downloadBtn.textContent = "Downloading... ⏳";
-            downloadBtn.disabled = true;
+            // Fetch image as Blob (so we can pass headers and instantly download later)
+            const response = await fetch(apiUrl, fetchOptions);
+            
+            if (!response.ok) {
+                throw new Error(response.status === 401 ? "Unauthorized: Invalid API Key" : "Failed to generate image");
+            }
 
-            // Fetch the image as a Blob
-            const response = await fetch(currentImageUrl);
             const blob = await response.blob();
             
-            // Create a temporary object URL
-            const blobUrl = window.URL.createObjectURL(blob);
+            // Clean up previous blob URL to avoid memory leaks
+            if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
             
-            // Create a temporary link element and trigger download
-            const link = document.createElement("a");
-            link.href = blobUrl;
-            link.download = `AI-Image-${Date.now()}.jpg`;
-            document.body.appendChild(link);
-            link.click();
+            currentBlobUrl = window.URL.createObjectURL(blob);
             
-            // Clean up
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(blobUrl);
+            // Display Image
+            resultImg.src = currentBlobUrl;
             
+            resultImg.onload = () => {
+                loader.classList.add("hidden");
+                resultImg.classList.remove("hidden");
+                actionButtons.classList.remove("hidden");
+            };
+
         } catch (error) {
-            console.error("Download failed:", error);
-            alert("Failed to download image. You can right-click the image and select 'Save Image As...'.");
+            console.error(error);
+            loader.classList.add("hidden");
+            alert(`Error: ${error.message}. Please try again.`);
         } finally {
-            downloadBtn.textContent = "Download 📥";
-            downloadBtn.disabled = false;
+            generateBtn.disabled = false;
+            regenerateBtn.disabled = false;
         }
+    };
+
+    // --- Instant Download Logic ---
+    const downloadImage = () => {
+        if (!currentBlobUrl) return;
+        
+        const link = document.createElement("a");
+        link.href = currentBlobUrl;
+        link.download = `AI-Image-${Date.now()}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     // Event Listeners
