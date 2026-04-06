@@ -7,10 +7,27 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>🔑 Pollinations Login</h2>
+            <p>Enter your API Token from <a href="https://enter.pollinations.ai" target="_blank">enter.pollinations.ai</a> to unlock higher limits.</p>
+            <input type="text" id="api-key-input" placeholder="Paste your Bearer Token here..." />
+            <div class="modal-actions">
+                <button id="save-key-btn" class="btn-success">Save Token</button>
+                <button id="clear-key-btn" class="btn-warning hidden">Logout</button>
+                <button id="close-modal-btn" class="btn-outline">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <header>
-            <h1>✨ AI Image Generator</h1>
-            <p>Type a prompt and generate your image for free.</p>
+            <div class="header-top">
+                <h1>✨ AI Image Generator</h1>
+                <button id="auth-btn" class="btn-outline auth-btn">Login / API Key</button>
+            </div>
+            <p>Type a prompt and generate your image directly from your browser.</p>
         </header>
 
         <main>
@@ -27,6 +44,30 @@
                     <option value="1080x1920">Portrait / Stories (1080x1920)</option>
                 </select>
             </div>
+
+            <!-- Advanced Options -->
+            <details class="advanced-options">
+                <summary>⚙️ Advanced Options</summary>
+                <div class="options-grid">
+                    <div class="input-group">
+                        <label for="model">Model:</label>
+                        <select id="model">
+                            <option value="flux">Flux (Default & Best)</option>
+                            <option value="turbo">Turbo (Fast)</option>
+                            <option value="flux-realism">Flux Realism</option>
+                            <option value="any-dark">Any Dark</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="seed">Seed (Optional):</label>
+                        <input type="number" id="seed" placeholder="Leave blank for random">
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enhance">
+                        <label for="enhance">Enhance Prompt (AI expands your idea)</label>
+                    </div>
+                </div>
+            </details>
 
             <button id="generate-btn">Generate Image 🚀</button>
 
